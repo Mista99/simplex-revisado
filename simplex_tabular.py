@@ -2,7 +2,7 @@ import numpy as np
 
 np.set_printoptions(suppress=True, precision=2) #PARA Llos puntos en las matrices
 #imprime el tablero para cualquier matriz ingresadam de cualquier tamaño
-def imprimir_tablero(iteracion, Z, A, vars_no_basicas, rhs):
+def imprimir_tablero(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas):
     # Imprimir el tablero de simplex
     print(f"--- Iteración {iteracion} ---")
     encabezado = ['Z'] + vars_no_basicas + ['RHS']
@@ -14,7 +14,7 @@ def imprimir_tablero(iteracion, Z, A, vars_no_basicas, rhs):
     
     # Imprimir las filas del resto de la tabla
     for i in range(len(A)): 
-        print(f"{rhs[i + 1]:7.2f} | " + " | ".join([f"{A[i][j]:7.2f}" for j in range(len(A[i]))]) + f" | {rhs[i + 1]:7.2f}")
+        print(f"{vars_basicas[i]:7} | " + " | ".join([f"{A[i][j]:7.2f}" for j in range(len(A[i]))]) + f" | {rhs[i + 1]:7.2f}")
 
 def simplex_revisado_con_tablero(c, A, b):
 
@@ -46,7 +46,7 @@ def simplex_revisado_con_tablero(c, A, b):
     print("Z es")
     print(Z)
     # Imprimir la primera tabla
-    imprimir_tablero(iteracion, Z, A, vars_no_basicas, rhs)
+    imprimir_tablero(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas)
     
     #iteraciones del simplex
     while True:
@@ -71,7 +71,7 @@ def simplex_revisado_con_tablero(c, A, b):
         print("los ratios fueron")
         for fila in ratios:
             print(fila)
-        fila_pivote = np.argmin(ratios)
+        fila_pivote = np.argmin(ratios) #entrega es el indice del argumento minimo
         
         # imprimir el pivoteo
         pivote = A[fila_pivote][col_pivote - 1]
@@ -86,22 +86,31 @@ def simplex_revisado_con_tablero(c, A, b):
         print(tabla)
         #----------- Hacer el pivoteo end -----------#
         #-----------  -----------#
+        #Reducir por pivoteo la columna escogida
         for i in range(len(A)):
             if i != fila_pivote:
                 factor = A[i][col_pivote - 1]
                 A[i] -= factor * A[fila_pivote]
                 rhs[i + 1] -= factor * rhs[fila_pivote + 1]
         
+        #reducir por pivote la fila de la z
         factor = Z[col_pivote]
         Z[1:] -= factor * A[fila_pivote]  # Solo restar a partir del índice 1
         rhs[0] -= factor * rhs[fila_pivote + 1]
         
         # Actualizar las variables básicas y no básicas
-        vars_basicas[fila_pivote] = vars_no_basicas[col_pivote - 1]
-        
+        print("Las vars basicas son:")
+        print(vars_basicas)
+
+        vars_basicas[fila_pivote] = vars_no_basicas[col_pivote - 1] #intercambio de var no basica por una basica
+        print("Las vars basicas despues del cambio son:")
+        print(vars_basicas)
+        print("Las vars no basicas despues del cambio son:")
+        print(vars_no_basicas)
+
         # Imprimir el tablero después de esta iteración
         iteracion += 1
-        imprimir_tablero(iteracion, Z, A, vars_no_basicas, rhs)
+        imprimir_tablero(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas)
      
     # La solución óptima está en la RHS
     return rhs[1:]
