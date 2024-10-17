@@ -37,7 +37,7 @@ def simplex_revisado_con_tablero(c, A, b):
     print("las vars basicas son")
     print(vars_basicas)
     
-    # Inicialización de Z (fila de la función objetivo)
+
     Z = np.hstack([1, -c])
     
     rhs = np.hstack([0, b]) #es el vector columna al final
@@ -48,9 +48,7 @@ def simplex_revisado_con_tablero(c, A, b):
     # Imprimir la primera tabla
     imprimir_tablero(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas)
     
-    #iteraciones del simplex
     while True:
-        # Verificar si hemos alcanzado la solución óptima (todos los coeficientes en Z no negativos)
         if all(Z[1:] >= 0):
             print("\nSolución óptima encontrada")
             break
@@ -124,12 +122,10 @@ def simplex_revisado_con_tablero(c, A, b):
 # x1, x2 ≥ 0
 
 c = np.array([3, 5])  # Coeficientes de la función objetivo
-#A es la matriz de coeficientes de las vars de las restricciones
 A = np.array([[1, 0],
               [0, 2],
               [3, 2]])  # Matriz de coeficientes de restricciones
 b = np.array([4, 12, 18])  # Lados derechos de las restricciones
 
-# Llamada al método simplex revisado
 solucion = simplex_revisado_con_tablero(c, A, b)
 print("\nSolución final:", solucion)
