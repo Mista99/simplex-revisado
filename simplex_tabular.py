@@ -118,9 +118,9 @@ def simplex_revisado_con_tablero(c, A, b):
 # Ejemplo de uso con más iteraciones
 # Maximizar z = 3x1 + 5x2
 # Sujeto a:
-# 2x1 + 3x2 ≤ 12
-# x1 + x2 ≤ 6
-# x1 + 2x2 ≤ 8
+# x1 ≤ 4
+# 2x2 ≤ 12
+# 31 + 2x2 ≤ 18
 # x1, x2 ≥ 0
 
 c = np.array([3, 5])  # Coeficientes de la función objetivo
