@@ -1,5 +1,6 @@
 import sympy as sp
 
+
 # Para imprimir matrices más fácilmente
 sp.init_printing()
 
