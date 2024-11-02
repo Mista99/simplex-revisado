@@ -1,6 +1,9 @@
 import numpy as np
 from colorama import Fore, init
 from tabulate import tabulate  # Nueva librería para organizar la tabla
+from scipy.optimize import linprog
+import distutils
+import analisis_sensibilidad as ans
 
 # Inicializar colorama
 init(autoreset=True)
@@ -9,11 +12,9 @@ np.set_printoptions(suppress=True, precision=2)  # Para los puntos en las matric
 
 # Imprime el tablero para cualquier matriz ingresada de cualquier tamaño
 def colorear_pivotes(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas, i_col_pivote, i_fila_pivote):
-    # Imprimir el tablero de simplex con colores
     print(Fore.CYAN + f"--- Iteración {iteracion} ---")
     encabezado = vars_no_basicas + ['RHS']
     
-    # Formatear fila Z
     fila_z = ['Z'] + [f"{Z[i]:7.2f}" for i in range(len(Z))] + [f"{rhs[0]:7.2f}"]
     
     # Formatear las filas de las restricciones (variables básicas)
@@ -31,14 +32,11 @@ def colorear_pivotes(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas, i_col_
     # Crear la tabla usando tabulate
     print(tabulate([fila_z] + filas, headers=encabezado, tablefmt="grid"))
 def imprimir_tablero(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas):
-    # Imprimir el tablero de simplex con colores
     print(Fore.CYAN + f"--- Iteración {iteracion} ---")
     encabezado = vars_no_basicas + ['RHS']
     
     # Formatear fila Z
     fila_z = ['Z'] + [f"{Z[i]:7.2f}" for i in range(len(Z))] + [f"{rhs[0]:7.2f}"]
-    
-    # Formatear las filas de las restricciones (variables básicas)
     filas = [[vars_basicas[i]] + [0] + [f"{A[i][j]:7.2f}" for j in range(len(A[i]))] + [f"{rhs[i + 1]:7.2f}"] for i in range(len(A))]
     
     # Crear la tabla usando tabulate
@@ -95,7 +93,7 @@ def simplex_revisado_con_tablero(c, A, b):
         print(rhs)
         colorear_pivotes(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas, i_col_pivote-1, i_fila_pivote)
 
-        # Imprimir pivoteo
+        print(Fore.YELLOW + "----------Realizando pivoteo----------")
         pivote = A[i_fila_pivote][i_col_pivote - 1]
         A[i_fila_pivote] /= pivote
         rhs[i_fila_pivote + 1] /= pivote
@@ -115,18 +113,25 @@ def simplex_revisado_con_tablero(c, A, b):
         # Actualizar variables básicas
         vars_basicas[i_fila_pivote] = vars_no_basicas[i_col_pivote - 1]
 
-        # Imprimir el tablero después de la iteración
         iteracion += 1
-        imprimir_tablero(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas)
-    
+        colorear_pivotes(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas, i_col_pivote-1, i_fila_pivote)
     return rhs[1:]
 
-# Ejemplo de uso con más iteraciones
-c = np.array([3, 5])
-A = np.array([[1, 0],
-              [0, 2],
-              [3, 2]])
+c = np.array([-3, -5])
+A = np.array([[1, 0],   # x1 <= 4
+              [0, 2],   # x2 <= 6
+              [3, 2]])  # 3x1 + 2x2 <= 18
 b = np.array([4, 12, 18])
 
-solucion = simplex_revisado_con_tablero(c, A, b)
-print(Fore.GREEN + f"\nSolución final: {solucion}")
+solucion = simplex_revisado_con_tablero(-1*c, A, b)
+
+res = linprog(c, A_ub=A, b_ub=b, method='highs')
+
+if res.success:
+    print("Solución óptima:", res.x)
+    print("Valor óptimo de la función objetivo:", -res.fun)  # Negar el resultado para maximizar
+else:
+    print("No se encontró solución óptima.")
+
+ans.analisis_sensibilidad(c, A, b, res)
+
