@@ -11,13 +11,13 @@ np.set_printoptions(suppress=True, precision=2)  # Para los puntos en las matric
 def imprimir_tablero(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas):
     # Imprimir el tablero de simplex con colores
     print(Fore.CYAN + f"--- Iteración {iteracion} ---")
-    encabezado = ['Variables'] + vars_no_basicas + ['RHS']
+    encabezado = vars_no_basicas + ['RHS']
     
     # Formatear fila Z
     fila_z = ['Z'] + [f"{Z[i]:7.2f}" for i in range(len(Z))] + [f"{rhs[0]:7.2f}"]
     
     # Formatear las filas de las restricciones (variables básicas)
-    filas = [[vars_basicas[i]] + [f"{A[i][j]:7.2f}" for j in range(len(A[i]))] + [f"{rhs[i + 1]:7.2f}"] for i in range(len(A))]
+    filas = [[vars_basicas[i]] + [0] + [f"{A[i][j]:7.2f}" for j in range(len(A[i]))] + [f"{rhs[i + 1]:7.2f}"] for i in range(len(A))]
     
     # Crear la tabla usando tabulate
     print(tabulate([fila_z] + filas, headers=encabezado, tablefmt="grid"))
@@ -39,6 +39,10 @@ def simplex_revisado_con_tablero(c, A, b):
     rhs = np.hstack([0, b])
 
     # Imprimir la primera tabla
+    print("rhs")
+    print(rhs)
+    print("Z")
+    print(Z)
     imprimir_tablero(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas)
     
     while True:
@@ -56,7 +60,10 @@ def simplex_revisado_con_tablero(c, A, b):
                 ratios.append(rhs[i + 1] / A[i][col_pivote - 1])
             else:
                 ratios.append(np.inf)
-        
+                print("los ratios fueron")
+        #imprimir los ratios
+        for fila in ratios:
+            print(fila)
         fila_pivote = np.argmin(ratios)
 
         # Imprimir pivoteo
