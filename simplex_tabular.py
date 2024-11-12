@@ -1,137 +1,65 @@
+import tkinter as tk
+from tkinter import messagebox
 import numpy as np
-from colorama import Fore, init
-from tabulate import tabulate  # Nueva librería para organizar la tabla
 from scipy.optimize import linprog
-import distutils
-import analisis_sensibilidad as ans
 
-# Inicializar colorama
-init(autoreset=True)
+# Función que se ejecuta al presionar el botón
+def resolver_simplex():
+    try:
+        # Leer la función objetivo ingresada
+        objetivo_str = objetivo_entry.get()
+        c = np.array(list(map(float, objetivo_str.split(','))))
 
-np.set_printoptions(suppress=True, precision=2)  # Para los puntos en las matrices
+        # Leer las restricciones ingresadas
+        restricciones_str = restricciones_text.get("1.0", tk.END).strip().split("\n")
+        A = []
+        b = []
+        for restriccion in restricciones_str:
+            partes = list(map(float, restriccion.split(',')))
+            A.append(partes[:-1])  # Coeficientes de las variables
+            b.append(partes[-1])   # Término independiente
 
-# Imprime el tablero para cualquier matriz ingresada de cualquier tamaño
-def colorear_pivotes(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas, i_col_pivote, i_fila_pivote):
-    print(Fore.CYAN + f"--- Iteración {iteracion} ---")
-    encabezado = vars_no_basicas + ['RHS']
-    
-    fila_z = ['Z'] + [f"{Z[i]:7.2f}" for i in range(len(Z))] + [f"{rhs[0]:7.2f}"]
-    
-    # Formatear las filas de las restricciones (variables básicas)
-    filas = [
-    [vars_basicas[i]] + [0] + 
-    [
-        f"{A[i][j]:7.2f}" if not (i == i_fila_pivote and j == i_col_pivote) 
-        else Fore.YELLOW + f"{A[i][j]:7.2f}" + Fore.RESET for j in range(len(A[i]))
-    ] + 
-    [f"{rhs[i + 1]:7.2f}"]  # Corregido aquí: Acceder a rhs fuera del bucle for de filas
-    for i in range(len(A))]
+        A = np.array(A)
+        b = np.array(b)
 
-        
-    
-    # Crear la tabla usando tabulate
-    print(tabulate([fila_z] + filas, headers=encabezado, tablefmt="grid"))
-def imprimir_tablero(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas):
-    print(Fore.CYAN + f"--- Iteración {iteracion} ---")
-    encabezado = vars_no_basicas + ['RHS']
-    
-    # Formatear fila Z
-    fila_z = ['Z'] + [f"{Z[i]:7.2f}" for i in range(len(Z))] + [f"{rhs[0]:7.2f}"]
-    filas = [[vars_basicas[i]] + [0] + [f"{A[i][j]:7.2f}" for j in range(len(A[i]))] + [f"{rhs[i + 1]:7.2f}"] for i in range(len(A))]
-    
-    # Crear la tabla usando tabulate
-    print(tabulate([fila_z] + filas, headers=encabezado, tablefmt="grid"))
+        # Comprobar si se maximiza o minimiza
+        if modo.get() == "Maximizar":
+            c = -c  # Convertir a minimización si se selecciona maximizar
 
-def simplex_revisado_con_tablero(c, A, b):
-    iteracion = 0
+        # Resolver usando scipy.optimize.linprog
+        res = linprog(c, A_ub=A, b_ub=b, method='highs')
 
-    n_vars = len(c)
-    n_restricciones = len(A)
-    
-    A = np.hstack([A, np.eye(n_restricciones)])
-    c = np.hstack([c, np.zeros(n_restricciones)])
+        if res.success:
+            resultado = f"Solución óptima: {res.x}\nValor óptimo de la función objetivo: {(-res.fun if modo.get() == 'Maximizar' else res.fun)}"
+            messagebox.showinfo("Resultado", resultado)
+        else:
+            messagebox.showerror("Error", "No se encontró solución óptima.")
 
-    # Variables básicas y no básicas
-    vars_basicas = [f's{i+1}' for i in range(n_restricciones)]
-    vars_no_basicas = [f'x{i+1}' for i in range(n_vars)] + vars_basicas
-    
-    Z = np.hstack([1, -c])
-    rhs = np.hstack([0, b])
+    except Exception as e:
+        messagebox.showerror("Error", f"Error en la entrada de datos: {e}")
 
-    # Imprimir la primera tabla
-    print("rhs")
-    print(rhs)
-    print("Z")
-    print(Z)
-    imprimir_tablero(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas)
-    
-    while True:
-        if all(Z[1:] >= 0):
-            print(Fore.GREEN + "\nSolución óptima encontrada")
-            break
-        
-        # Seleccionar la columna pivote
-        i_col_pivote = np.argmin(Z[1:]) + 1
-        
-        # Hacer el pivoteo
-        ratios = []
-        for i in range(len(b)):
-            if A[i][i_col_pivote - 1] > 0:
-                ratios.append(rhs[i + 1] / A[i][i_col_pivote - 1])
-            else:
-                ratios.append(np.inf)
-                print("los ratios fueron")
-        #imprimir los ratios
-        for fila in ratios:
-            print(fila)
+# Crear la ventana principal
+root = tk.Tk()
+root.title("Método Simplex Revisado")
 
-        i_fila_pivote = np.argmin(ratios)
-        print("imprimiendo fila y columna pivote")
-        print("col: ", i_col_pivote)
-        print("fila: ", i_fila_pivote)
-        print("rhs")
-        print(rhs)
-        colorear_pivotes(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas, i_col_pivote-1, i_fila_pivote)
+# Etiqueta y campo de entrada para la función objetivo
+tk.Label(root, text="Función objetivo (separada por comas):").pack(pady=5)
+objetivo_entry = tk.Entry(root, width=50)
+objetivo_entry.pack(pady=5)
 
-        print(Fore.YELLOW + "----------Realizando pivoteo----------")
-        pivote = A[i_fila_pivote][i_col_pivote - 1]
-        A[i_fila_pivote] /= pivote
-        rhs[i_fila_pivote + 1] /= pivote
+# Etiqueta y campo de entrada para las restricciones
+tk.Label(root, text="Restricciones (coeficientes separados por comas, una por línea, último valor es RHS):").pack(pady=5)
+restricciones_text = tk.Text(root, height=5, width=50)
+restricciones_text.pack(pady=5)
 
-        # Reducir por pivoteo
-        for i in range(len(A)):
-            if i != i_fila_pivote:
-                factor = A[i][i_col_pivote - 1]
-                A[i] -= factor * A[i_fila_pivote]
-                rhs[i + 1] -= factor * rhs[i_fila_pivote + 1]
+# Botón de opción para seleccionar entre maximizar o minimizar
+modo = tk.StringVar(value="Maximizar")
+tk.Radiobutton(root, text="Maximizar", variable=modo, value="Maximizar").pack(anchor=tk.W)
+tk.Radiobutton(root, text="Minimizar", variable=modo, value="Minimizar").pack(anchor=tk.W)
 
-        # Reducir por pivote la fila Z
-        factor = Z[i_col_pivote]
-        Z[1:] -= factor * A[i_fila_pivote]
-        rhs[0] -= factor * rhs[i_fila_pivote + 1]
-        
-        # Actualizar variables básicas
-        vars_basicas[i_fila_pivote] = vars_no_basicas[i_col_pivote - 1]
+# Botón para resolver el problema
+resolver_button = tk.Button(root, text="Resolver", command=resolver_simplex)
+resolver_button.pack(pady=20)
 
-        iteracion += 1
-        colorear_pivotes(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas, i_col_pivote-1, i_fila_pivote)
-    return rhs[1:]
-
-c = np.array([-3, -5])
-A = np.array([[1, 0],   # x1 <= 4
-              [0, 2],   # x2 <= 6
-              [3, 2]])  # 3x1 + 2x2 <= 18
-b = np.array([4, 12, 18])
-
-solucion = simplex_revisado_con_tablero(-1*c, A, b)
-
-res = linprog(c, A_ub=A, b_ub=b, method='highs')
-
-if res.success:
-    print("Solución óptima:", res.x)
-    print("Valor óptimo de la función objetivo:", -res.fun)  # Negar el resultado para maximizar
-else:
-    print("No se encontró solución óptima.")
-
-ans.analisis_sensibilidad(c, A, b, res)
-
+# Iniciar la aplicación
+root.mainloop()
