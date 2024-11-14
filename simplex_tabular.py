@@ -134,4 +134,3 @@ else:
     print("No se encontró solución óptima.")
 
 ans.analisis_sensibilidad(c, A, b, res)
-
