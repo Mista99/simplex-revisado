@@ -1,6 +1,6 @@
 import numpy as np
 from colorama import Fore, init
-from tabulate import tabulate  # Nueva librería para organizar la tabla
+from tabulate import tabulate  # Librería para organizar la tabla
 from scipy.optimize import linprog
 import distutils
 import analisis_sensibilidad as ans
@@ -10,38 +10,49 @@ init(autoreset=True)
 
 np.set_printoptions(suppress=True, precision=2)  # Para los puntos en las matrices
 
-# Imprime el tablero para cualquier matriz ingresada de cualquier tamaño
+# Función para imprimir el tablero con color en los pivotes
 def colorear_pivotes(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas, i_col_pivote, i_fila_pivote):
     print(Fore.CYAN + f"--- Iteración {iteracion} ---")
-    encabezado = vars_no_basicas + ['RHS']
     
-    fila_z = ['Z'] + [f"{Z[i]:7.2f}" for i in range(len(Z))] + [f"{rhs[0]:7.2f}"]
-    
-    # Formatear las filas de las restricciones (variables básicas)
-    filas = [
-    [vars_basicas[i]] + [0] + 
-    [
-        f"{A[i][j]:7.2f}" if not (i == i_fila_pivote and j == i_col_pivote) 
-        else Fore.YELLOW + f"{A[i][j]:7.2f}" + Fore.RESET for j in range(len(A[i]))
-    ] + 
-    [f"{rhs[i + 1]:7.2f}"]  # Corregido aquí: Acceder a rhs fuera del bucle for de filas
-    for i in range(len(A))]
+    # Colorear la columna pivote en el encabezado
+    encabezado = [
+        Fore.RED + var + Fore.RESET if j == i_col_pivote else var
+        for j, var in enumerate(vars_no_basicas + ['RHS'])
+    ]
+    col_piv_col = i_col_pivote + 1
+    # Formatear fila Z, coloreando la columna pivote
+    fila_z = ['Z'] + [
+        Fore.RED + f"{Z[i]:7.2f}" + Fore.RESET if i == col_piv_col else f"{Z[i]:7.2f}"
+        for i in range(len(Z))
+    ] + [f"{rhs[0]:7.2f}"]
 
-        
+    # Formatear las filas de las restricciones, coloreando la fila y columna pivote
+    filas = [
+        [
+            vars_basicas[i] + (Fore.RED + " (Fila pivote)" + Fore.RESET if i == i_fila_pivote else ''),
+            0
+        ] + [
+            Fore.YELLOW + f"{A[i][j]:7.2f}" + Fore.RESET if (i == i_fila_pivote or j == i_col_pivote) 
+            else f"{A[i][j]:7.2f}" 
+            for j in range(len(A[i]))
+        ] + [f"{rhs[i + 1]:7.2f}"]
+        for i in range(len(A))
+    ]
     
-    # Crear la tabla usando tabulate
     print(tabulate([fila_z] + filas, headers=encabezado, tablefmt="grid"))
+
+
 def imprimir_tablero(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas):
     print(Fore.CYAN + f"--- Iteración {iteracion} ---")
     encabezado = vars_no_basicas + ['RHS']
     
-    # Formatear fila Z
     fila_z = ['Z'] + [f"{Z[i]:7.2f}" for i in range(len(Z))] + [f"{rhs[0]:7.2f}"]
     filas = [[vars_basicas[i]] + [0] + [f"{A[i][j]:7.2f}" for j in range(len(A[i]))] + [f"{rhs[i + 1]:7.2f}"] for i in range(len(A))]
     
-    # Crear la tabla usando tabulate
+
     print(tabulate([fila_z] + filas, headers=encabezado, tablefmt="grid"))
 
+# Función principal del método simplex revisado
 def simplex_revisado_con_tablero(c, A, b):
     iteracion = 0
 
@@ -59,10 +70,6 @@ def simplex_revisado_con_tablero(c, A, b):
     rhs = np.hstack([0, b])
 
     # Imprimir la primera tabla
-    print("rhs")
-    print(rhs)
-    print("Z")
-    print(Z)
     imprimir_tablero(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas)
     
     while True:
@@ -73,24 +80,18 @@ def simplex_revisado_con_tablero(c, A, b):
         # Seleccionar la columna pivote
         i_col_pivote = np.argmin(Z[1:]) + 1
         
-        # Hacer el pivoteo
         ratios = []
         for i in range(len(b)):
             if A[i][i_col_pivote - 1] > 0:
                 ratios.append(rhs[i + 1] / A[i][i_col_pivote - 1])
             else:
                 ratios.append(np.inf)
-                print("los ratios fueron")
-        #imprimir los ratios
-        for fila in ratios:
-            print(fila)
-
+        
         i_fila_pivote = np.argmin(ratios)
-        print("imprimiendo fila y columna pivote")
-        print("col: ", i_col_pivote)
-        print("fila: ", i_fila_pivote)
-        print("rhs")
-        print(rhs)
+
+        print(Fore.YELLOW + f"\nColumna pivote: {i_col_pivote} (Variable {vars_no_basicas[i_col_pivote - 1]})")
+        print(Fore.RED + f"Fila pivote: {i_fila_pivote} (Variable {vars_basicas[i_fila_pivote]})\n")
+        
         colorear_pivotes(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas, i_col_pivote-1, i_fila_pivote)
 
         print(Fore.YELLOW + "----------Realizando pivoteo----------")
@@ -115,22 +116,57 @@ def simplex_revisado_con_tablero(c, A, b):
 
         iteracion += 1
         colorear_pivotes(iteracion, Z, A, vars_no_basicas, rhs, vars_basicas, i_col_pivote-1, i_fila_pivote)
+
     return rhs[1:]
+def capturar_parametros():
+    n = int(input("Ingrese el número de variables de decisión: "))
+    c = input(f"Ingrese los coeficientes de la función objetivo (separados por espacios, para {n} variables): ")
+    c = np.array([float(coef) for coef in c.split()])
+    m = int(input("Ingrese el número de restricciones: "))
+    
+    # Solicitar las restricciones (matriz A)
+    A = []
+    for i in range(m):
+        restriccion = input(f"Ingrese los coeficientes de la restricción {i+1} (separados por espacios, para {n} variables): ")
+        A.append([float(coef) for coef in restriccion.split()])
+    A = np.array(A)
+    
+    b = input(f"Ingrese los valores del lado derecho de las restricciones (separados por espacios, para {m} restricciones): ")
+    b = np.array([float(valor) for valor in b.split()])
+    
+    return c, A, b
 
-c = np.array([-3, -5])
-A = np.array([[1, 0],   # x1 <= 4
-              [0, 2],   # x2 <= 6
-              [3, 2]])  # 3x1 + 2x2 <= 18
-b = np.array([4, 12, 18])
+def resolver_simplex(c, A, b):
+    solucion = simplex_revisado_con_tablero(-1*c, A, b)
+    res = linprog(c, A_ub=A, b_ub=b, method='highs')
 
-solucion = simplex_revisado_con_tablero(-1*c, A, b)
+    if res.success:
+        print("Solución óptima:", res.x)
+        print("Valor óptimo de la función objetivo:", -res.fun)  # Negar el resultado para maximizar
+    else:
+        print("No se encontró solución óptima.")
+    
+    ans.analisis_sensibilidad(c, A, b, res)
 
-res = linprog(c, A_ub=A, b_ub=b, method='highs')
+c, A, b = capturar_parametros()
 
-if res.success:
-    print("Solución óptima:", res.x)
-    print("Valor óptimo de la función objetivo:", -res.fun)  # Negar el resultado para maximizar
-else:
-    print("No se encontró solución óptima.")
+resolver_simplex(c, A, b)
 
-ans.analisis_sensibilidad(c, A, b, res)
+# # Parámetros para el problema
+# c = np.array([-3, -5])
+# A = np.array([[1, 0],   # x1 <= 4
+#               [0, 2],   # x2 <= 6
+#               [3, 2]])  # 3x1 + 2x2 <= 18
+# b = np.array([4, 12, 18])
+
+# solucion = simplex_revisado_con_tablero(-1*c, A, b)
+
+# res = linprog(c, A_ub=A, b_ub=b, method='highs')
+
+# if res.success:
+#     print("Solución óptima:", res.x)
+#     print("Valor óptimo de la función objetivo:", -res.fun)  # Negar el resultado para maximizar
+# else:
+#     print("No se encontró solución óptima.")
+
+# ans.analisis_sensibilidad(c, A, b, res)
