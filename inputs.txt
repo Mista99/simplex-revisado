@@ -1,0 +1,7 @@
+Ingrese el número de variables de decisión: 2
+Ingrese los coeficientes de la función objetivo (separados por espacios, para 2 variables): -3 -5
+Ingrese el número de restricciones: 3
+Ingrese los coeficientes de la restricción 1 (separados por espacios, para 2 variables): 1 0
+Ingrese los coeficientes de la restricción 2 (separados por espacios, para 2 variables): 0 2
+Ingrese los coeficientes de la restricción 3 (separados por espacios, para 2 variables): 3 2
+Ingrese los valores del lado derecho de las restricciones (separados por espacios, para 3 restricciones): 4 12 18

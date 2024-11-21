@@ -148,9 +148,6 @@ def resolver_simplex(c, A, b):
     
     ans.analisis_sensibilidad(c, A, b, res)
 
-c, A, b = capturar_parametros()
-
-resolver_simplex(c, A, b)
 
 # # Parámetros para el problema
 # c = np.array([-3, -5])
