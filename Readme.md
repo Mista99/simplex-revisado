@@ -6,7 +6,7 @@ Para este proyecto, es necesario instalar las siguientes librerías, las cuales 
 
 ```bash
 pip install -r requirements.txt
-
+```
 # Ejecutar el proyecto
 
 Para ejecutar el proyecto correctamente debes ir al archivo main.py y ejecutarlo.
