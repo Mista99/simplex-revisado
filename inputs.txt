@@ -1,3 +1,4 @@
+ingresar en el siguiente orden los inputs:
 Simplex Tabular:
 2
 -3 -5
@@ -8,8 +9,18 @@ Simplex Tabular:
 4 12 18
 
 Grafico:
-
+x1: 3
+x2: 5
 Restricciones:
-1 0 <= 4
-0 2 <= 12
-3 2 <= 18
+1
+0
+<=
+4
+0
+2
+<=
+12
+3
+2
+<=
+18
