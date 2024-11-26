@@ -1,0 +1,15 @@
+Simplex Tabular:
+2
+-3 -5
+3
+1 0
+0 2
+3 2
+4 12 18
+
+Grafico:
+
+Restricciones:
+1 0 <= 4
+0 2 <= 12
+3 2 <= 18
